@@ -3,6 +3,7 @@
 #include "literal.h"
 #include "token.h"
 #include "utils.h"
+#include <string.h>
 
 static bool is_at_end(Scanner* scanner) {
     return scanner->source[scanner->current] != '\0';
@@ -52,6 +53,14 @@ static bool is_digit(char c) {
     return c >= '0' && c <= '9';
 }
 
+static bool is_alpha(char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+}
+
+static bool is_alphanumeric(char c) {
+    return is_alpha(c) || is_digit(c);
+}
+
 static bool match(Scanner *scanner, char expected) {
   if (is_at_end(scanner)) return false;
   if (scanner->source[scanner->current] != expected) return false;
@@ -63,6 +72,25 @@ static bool match(Scanner *scanner, char expected) {
 static char peek(Scanner* scanner) {
   if (is_at_end(scanner)) return '\0';
   return scanner->source[scanner->current];
+}
+
+static TokenType get_keyword(const char* text) {
+    for (int i =0; i < KEYWORD_COUNT; i++) {
+        if (strcmp(text, keywords[i].keyword) == 0) {
+            return keywords[i].type;
+        }
+    }
+
+    return TOKEN_IDENTIFIER; //not found
+}
+
+static void identifier(Scanner* scanner) {
+    while (is_alphanumeric(peek(scanner))) advance(scanner);
+
+    char* text = my_strndup(&scanner->source[scanner->start], scanner->current - scanner->start);
+    TokenType type = get_keyword(text);
+
+    add_token(scanner, type);
 }
 
 static char peek_next(Scanner* scanner) {
@@ -159,6 +187,8 @@ void scan_token(Scanner* scanner) {
         default:
             if (is_digit(c)) {
                 number(scanner);
+            } else if (is_alpha(c)) {
+                identifier(scanner);
             } else {
                 error_at_line(scanner->line, "Unexpected character.");
             }

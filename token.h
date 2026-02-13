@@ -37,6 +37,32 @@ typedef struct {
     int capacity;
 } TokenList;
 
+typedef struct {
+    const char* keyword;
+    TokenType type;
+} KeywordMap;
+
+#define KEYWORD_COUNT 16
+
+static const KeywordMap keywords[] = {
+    {"and" , TOKEN_AND},
+    {"class" , TOKEN_CLASS},
+    {"else" , TOKEN_ELSE},
+    {"false" , TOKEN_FALSE},
+    {"fun" , TOKEN_FUN},
+    {"for" , TOKEN_FOR},
+    {"if" , TOKEN_IF},
+    {"nil" , TOKEN_NIL},
+    {"or" , TOKEN_OR},
+    {"print" , TOKEN_PRINT},
+    {"return" , TOKEN_RETURN},
+    {"super" , TOKEN_SUPER},
+    {"this" , TOKEN_THIS},
+    {"true" , TOKEN_TRUE},
+    {"var" , TOKEN_VAR},
+    {"while" , TOKEN_WHILE},
+};
+
 //helpers
 char* token_to_string(Token token);
 char* token_type_to_string(TokenType type);
