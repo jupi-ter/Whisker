@@ -5,7 +5,7 @@
 char* my_strndup(const char* s, size_t n) {
     char* result = malloc(n + 1);
     if (!result) {
-        error("Memory allocation failed.");
+        error(error_messages[ERROR_MALLOCFAIL].message);
     }
     memcpy(result, s, n);
     result[n] = '\0';

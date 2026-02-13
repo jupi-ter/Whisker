@@ -25,7 +25,7 @@ char* read_all_bytes(char* script) {
     FILE* file = fopen(script, "rb");
 
     if (!file) {
-        error("File loading failed before parsing or file doesn't exist");
+        error(error_messages[ERROR_FILELOAD].message);
     }
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
@@ -35,7 +35,7 @@ char* read_all_bytes(char* script) {
     //malloc can fail so
     if (!file_content_buffer) {
         fclose(file);
-        error("Memory allocation failed.");
+        error(error_messages[ERROR_MALLOCFAIL].message);
     }
 
     size_t bytes_read = fread(file_content_buffer, 1, file_size, file);
@@ -56,11 +56,11 @@ int run_file(char* script) {
 
 int main(int argc, char** argv) {
     if (argc > 2) {
-        error("Wrong argument amount");
+        error(error_messages[ERROR_ARGC].message);
     } else if (argc == 2) {
         run_file(argv[1]);
     } else {
-        error("Usage: whisker [file]");
+        error(error_messages[ERROR_USAGE].message);
     }
     return 0;
 }

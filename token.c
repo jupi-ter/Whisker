@@ -148,7 +148,7 @@ void add_token_list(TokenList *tokens, Token token) {
         Token* new_data = realloc(tokens->data, sizeof(Token) * tokens->capacity);
 
         if (!new_data) {
-            error("Memory reallocation failed.");
+            error(error_messages[ERROR_REALLOCFAIL].message);
         }
 
         tokens->data = new_data;
