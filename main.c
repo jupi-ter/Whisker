@@ -8,6 +8,7 @@
 #include "parser.h"
 #include "token.h"
 #include "error.h"
+#include "printer.h"
 
 int run(char* source) {
     Scanner scanner = scanner_create(source);
@@ -23,7 +24,8 @@ int run(char* source) {
     Expr* ast = parse(&parser);
 
     printf("=== AST ===\n");
-    printf("(AST printer coming next...)\n");
+    print_ast(ast);
+    printf("\n");
 
     expr_free(ast);
     free_token_list(&tokens);
@@ -60,7 +62,7 @@ int run_file(char* script) {
 
     run(file_contents);
     free(file_contents);
-    
+
     return 0;
 }
 
