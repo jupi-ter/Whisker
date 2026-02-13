@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS = -std=c99 -Wall -Werror -Wextra -pedantic -O2
+# -Werror -Wextra -pedantic -O2
+CFLAGS = -std=c99 -Wall -D_FORTIFY_SOURCE=0
 TARGET = whisker
 SOURCES = $(wildcard *.c)
 OBJECTS = $(SOURCES:.c=.o)

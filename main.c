@@ -4,20 +4,30 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "scanner.h"
+#include "parser.h"
+#include "token.h"
 #include "error.h"
 
 int run(char* source) {
-    //for now
-    printf("%s", source);
+    Scanner scanner = scanner_create(source);
+    TokenList tokens = scan_tokens(&scanner);
 
-    //later
-    /*    Scanner scanner = new Scanner(source);
-    List<Token> tokens = scanner.scanTokens();
+    printf("=== TOKENS ===\n");
+    for (int i = 0; i < tokens.count; i++) {
+        printf("%s\n", token_to_string(tokens.data[i]));
+    }
+    printf("\n");
 
-    // For now, just print the tokens.
-    for (Token token : tokens) {
-      System.out.println(token);
-    } */
+    Parser parser = parser_create(tokens);
+    Expr* ast = parse(&parser);
+
+    printf("=== AST ===\n");
+    printf("(AST printer coming next...)\n");
+
+    expr_free(ast);
+    free_token_list(&tokens);
+
     return 0;
 }
 
@@ -49,8 +59,8 @@ int run_file(char* script) {
     char* file_contents = read_all_bytes(script);
 
     run(file_contents);
-
     free(file_contents);
+    
     return 0;
 }
 
@@ -62,5 +72,7 @@ int main(int argc, char** argv) {
     } else {
         error(error_messages[ERROR_USAGE].message);
     }
+
+    printf("Exited with no errors.");
     return 0;
 }
