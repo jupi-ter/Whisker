@@ -1,0 +1,69 @@
+#include "stmt.h"
+#include "error.h"
+#include <stdlib.h>
+
+Stmt* stmt_expression(Expr* expression) {
+    Stmt* stmt = malloc(sizeof(Stmt));
+    if (!stmt) error(error_messages[ERROR_MALLOCFAIL].message);
+    
+    stmt->type = STMT_EXPRESSION;
+    stmt->as.expr.expr = expression;
+    
+    return stmt;
+}
+
+Stmt* stmt_print(Expr* expression) {
+    Stmt* stmt = malloc(sizeof(Stmt));
+    if (!stmt) error(error_messages[ERROR_MALLOCFAIL].message);
+    
+    stmt->type = STMT_PRINT;
+    stmt->as.print.expr = expression;
+    
+    return stmt;
+}
+
+Stmt* stmt_var(Token name, Expr* initializer) {
+    Stmt* stmt = malloc(sizeof(Stmt));
+    if (!stmt) error(error_messages[ERROR_MALLOCFAIL].message);
+    
+    stmt->type = STMT_VAR;
+    stmt->as.var.name = name;
+    stmt->as.var.initializer = initializer;
+    
+    return stmt;
+}
+
+Stmt* stmt_block(Stmt** statements, int count) {
+    Stmt* stmt = malloc(sizeof(Stmt));
+    if (!stmt) error(error_messages[ERROR_MALLOCFAIL].message);
+    
+    stmt->type = STMT_BLOCK;
+    stmt->as.block.statements = statements;
+    stmt->as.block.count = count;
+    
+    return stmt;
+}
+
+void stmt_free(Stmt* stmt) {
+    if (!stmt) return;
+    
+    switch (stmt->type) {
+        case STMT_EXPRESSION:
+            expr_free(stmt->as.expr.expr);
+            break;
+        case STMT_PRINT:
+            expr_free(stmt->as.print.expr);
+            break;
+        case STMT_VAR:
+            expr_free(stmt->as.var.initializer);
+            break;
+        case STMT_BLOCK:
+            for (int i = 0; i < stmt->as.block.count; i++) {
+                stmt_free(stmt->as.block.statements[i]);
+            }
+            free(stmt->as.block.statements);
+            break;
+    }
+    
+    free(stmt);
+}
