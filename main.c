@@ -1,6 +1,5 @@
 
 // https://craftinginterpreters.com/scanning.html
-// chapter 4.7, no implementation beyond 4.6
 
 #include <stdio.h>
 #include <stdlib.h>
