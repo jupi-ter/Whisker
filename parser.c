@@ -72,6 +72,14 @@ static Expr* factor(Parser* parser);
 static Expr* unary(Parser* parser);
 static Expr* primary(Parser* parser);
 
+// ========= Statement Grammar ==========
+static Stmt* declaration(Parser* parser);
+static Stmt* statement(Parser* parser);
+static Stmt* print_statement(Parser* parser);
+static Stmt* expression_statement(Parser* parser);
+static Stmt* var_declaration(Parser* parser);
+static Stmt* block_statement(Parser* parser);
+
 static Expr* primary(Parser* parser) {
     if (match(parser, TOKEN_FALSE)) {
         Literal lit = { .type = LITERAL_BOOLEAN, .as.boolean = false };
@@ -221,13 +229,6 @@ static Expr* expression(Parser* parser) {
     return assignment(parser);
 }
 
-// ========= Statement Grammar ==========
-static Stmt* statement(Parser* parser);
-static Stmt* print_statement(Parser* parser);
-static Stmt* expression_statement(Parser* parser);
-static Stmt* var_declaration(Parser* parser);
-static Stmt* block_statement(Parser* parser);
-
 static Stmt* block_statement(Parser* parser) {
     int capacity = 8;
     int count = 0;
@@ -247,7 +248,7 @@ static Stmt* block_statement(Parser* parser) {
             statements = new_stmts;
         }
         
-        statements[count++] = statement(parser);
+        statements[count++] = declaration(parser);
     }
     
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after block.");
