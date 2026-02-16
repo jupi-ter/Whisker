@@ -83,6 +83,7 @@ static Stmt* print_statement(Parser* parser);
 static Stmt* expression_statement(Parser* parser);
 static Stmt* var_declaration(Parser* parser);
 static Stmt* block_statement(Parser* parser);
+static Stmt* if_statement(Parser* parser);
 
 static Expr* primary(Parser* parser) {
     if (match(parser, TOKEN_FALSE)) {
@@ -293,6 +294,21 @@ static Stmt* block_statement(Parser* parser) {
     return stmt_block(statements, count);
 }
 
+static Stmt* if_statement(Parser* parser) {
+    consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
+    Expr* condition = expression(parser);
+    consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after if condition.");
+    
+    Stmt* then_branch = statement(parser);
+    Stmt* else_branch = NULL;
+    
+    if (match(parser, TOKEN_ELSE)) {
+        else_branch = statement(parser);
+    }
+    
+    return stmt_if(condition, then_branch, else_branch);
+}
+
 static Stmt* var_declaration(Parser* parser) {
     Token name = consume(parser, TOKEN_IDENTIFIER, "Expect variable name.");
     
@@ -319,6 +335,7 @@ static Stmt* expression_statement(Parser* parser) {
 
 static Stmt* statement(Parser* parser) {
     if (match(parser, TOKEN_PRINT)) return print_statement(parser);
+    if (match(parser, TOKEN_IF)) return if_statement(parser);
     if (match(parser, TOKEN_LEFT_BRACE)) return block_statement(parser);
     
     return expression_statement(parser);

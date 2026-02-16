@@ -1,14 +1,18 @@
 entity Player {
     float hsp;
-    float vsp;
+    bool moving_right;
     
     on_create {
         self.hsp = 0;
-        self.vsp = 0;
+        self.moving_right = true;
     }
     
     on_update {
-        self.hsp = 2;
+        if (self.moving_right) {
+            self.hsp = 2;
+        } else {
+            self.hsp = -2;
+        }
         transform.x = transform.x + self.hsp;
     }
 }

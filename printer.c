@@ -94,6 +94,21 @@ static void print_stmt_recursive(Stmt* stmt, int indent) {
                 print_stmt_recursive(stmt->as.block.statements[i], indent + 1);
             }
             break;
+        
+        case STMT_IF:
+            printf("IfStmt\n");
+            for (int i = 0; i < indent + 1; i++) printf("  ");
+            printf("Condition:\n");
+            print_expr_recursive(stmt->as.if_stmt.condition, indent + 2);
+            for (int i = 0; i < indent + 1; i++) printf("  ");
+            printf("Then:\n");
+            print_stmt_recursive(stmt->as.if_stmt.then_branch, indent + 2);
+            if (stmt->as.if_stmt.else_branch) {
+                for (int i = 0; i < indent + 1; i++) printf("  ");
+                printf("Else:\n");
+                print_stmt_recursive(stmt->as.if_stmt.else_branch, indent + 2);
+            }
+            break;
     }
 }
 

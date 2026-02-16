@@ -44,6 +44,18 @@ Stmt* stmt_block(Stmt** statements, int count) {
     return stmt;
 }
 
+Stmt* stmt_if(Expr* condition, Stmt* then_branch, Stmt* else_branch) {
+    Stmt* stmt = malloc(sizeof(Stmt));
+    if (!stmt) error(error_messages[ERROR_MALLOCFAIL].message);
+    
+    stmt->type = STMT_IF;
+    stmt->as.if_stmt.condition = condition;
+    stmt->as.if_stmt.then_branch = then_branch;
+    stmt->as.if_stmt.else_branch = else_branch;
+    
+    return stmt;
+}
+
 void stmt_free(Stmt* stmt) {
     if (!stmt) return;
     
@@ -62,6 +74,11 @@ void stmt_free(Stmt* stmt) {
                 stmt_free(stmt->as.block.statements[i]);
             }
             free(stmt->as.block.statements);
+            break;
+        case STMT_IF:
+            expr_free(stmt->as.if_stmt.condition);
+            stmt_free(stmt->as.if_stmt.then_branch);
+            stmt_free(stmt->as.if_stmt.else_branch);
             break;
     }
     

@@ -248,7 +248,28 @@ static void generate_stmt(CodeGen* gen, Stmt* stmt, const char* entity_name) {
         case STMT_PRINT:
             // Skip print statements in generated code (or implement debug logging)
             break;
-            
+        
+        case STMT_IF:
+            append_indent(gen);
+            append(gen, "if (");
+            generate_expr(gen, stmt->as.if_stmt.condition, entity_name);
+            append(gen, ") {\n");
+            gen->indent_level++;
+            generate_stmt(gen, stmt->as.if_stmt.then_branch, entity_name);
+            gen->indent_level--;
+            append_indent(gen);
+            append(gen, "}");
+            if (stmt->as.if_stmt.else_branch) {
+                append(gen, " else {\n");
+                gen->indent_level++;
+                generate_stmt(gen, stmt->as.if_stmt.else_branch, entity_name);
+                gen->indent_level--;
+                append_indent(gen);
+                append(gen, "}");
+            }
+            append(gen, "\n");
+            break;
+
         default:
             append_indent(gen);
             append(gen, "/* unsupported stmt */\n");
