@@ -7,6 +7,10 @@
 
 #define INITIAL_CAPACITY 4096
 
+// Forward declarations
+static void generate_expr(CodeGen* gen, Expr* expr, const char* entity_name);
+static void generate_stmt(CodeGen* gen, Stmt* stmt, const char* entity_name);
+
 CodeGen codegen_create(void) {
     CodeGen gen = {0};
     gen.capacity = INITIAL_CAPACITY;
@@ -143,6 +147,211 @@ static void generate_game_state(CodeGen* gen, Program* program) {
     append(gen, "} GameState;\n\n");
 }
 
+// Generate expression as C code
+static void generate_expr(CodeGen* gen, Expr* expr, const char* entity_name) {
+    switch (expr->type) {
+        case EXPR_LITERAL:
+            if (expr->as.literal.value.type == LITERAL_NUMBER) {
+                appendf(gen, "%g", expr->as.literal.value.as.number);
+            } else if (expr->as.literal.value.type == LITERAL_STRING) {
+                appendf(gen, "\"%s\"", expr->as.literal.value.as.string);
+            } else if (expr->as.literal.value.type == LITERAL_BOOLEAN) {
+                append(gen, expr->as.literal.value.as.boolean ? "true" : "false");
+            }
+            break;
+            
+        case EXPR_VARIABLE:
+            // Check if it's "self" - if so, convert to entity pointer access
+            if (strcmp(expr->as.variable.name.lexeme, "self") == 0) {
+                append(gen, "entity");  // The entity pointer variable name
+            } else {
+                // Regular variable
+                append(gen, expr->as.variable.name.lexeme);
+            }
+            break;
+            
+        case EXPR_BINARY:
+            generate_expr(gen, expr->as.binary.left, entity_name);
+            appendf(gen, " %s ", expr->as.binary.oprt.lexeme);
+            generate_expr(gen, expr->as.binary.right, entity_name);
+            break;
+            
+        case EXPR_UNARY:
+            append(gen, expr->as.unary.oprt.lexeme);
+            generate_expr(gen, expr->as.unary.right, entity_name);
+            break;
+            
+        case EXPR_GROUPING:
+            append(gen, "(");
+            generate_expr(gen, expr->as.grouping.expression, entity_name);
+            append(gen, ")");
+            break;
+            
+        case EXPR_ASSIGN:
+            // Check if assigning to self.field
+            appendf(gen, "%s", expr->as.assign.name.lexeme);
+            append(gen, " = ");
+            generate_expr(gen, expr->as.assign.value, entity_name);
+            break;
+        
+        case EXPR_GET:
+            generate_expr(gen, expr->as.get.object, entity_name);
+            appendf(gen, "->%s", expr->as.get.name.lexeme);
+            break;
+
+        case EXPR_SET:
+            generate_expr(gen, expr->as.set.object, entity_name);
+            appendf(gen, "->%s = ", expr->as.set.name.lexeme);
+            generate_expr(gen, expr->as.set.value, entity_name);
+            break;
+
+        default:
+            append(gen, "/* unsupported expr */");
+            break;
+    }
+}
+
+// Generate statement as C code
+static void generate_stmt(CodeGen* gen, Stmt* stmt, const char* entity_name) {
+    switch (stmt->type) {
+        case STMT_EXPRESSION:
+            append_indent(gen);
+            generate_expr(gen, stmt->as.expr.expr, entity_name);
+            append(gen, ";\n");
+            break;
+            
+        case STMT_VAR:
+            append_indent(gen);
+            // For now, assume all vars are float - we'll improve this later
+            append(gen, "float ");
+            append(gen, stmt->as.var.name.lexeme);
+            if (stmt->as.var.initializer) {
+                append(gen, " = ");
+                generate_expr(gen, stmt->as.var.initializer, entity_name);
+            }
+            append(gen, ";\n");
+            break;
+            
+        case STMT_BLOCK:
+            for (int i = 0; i < stmt->as.block.count; i++) {
+                generate_stmt(gen, stmt->as.block.statements[i], entity_name);
+            }
+            break;
+            
+        case STMT_PRINT:
+            // Skip print statements in generated code (or implement debug logging)
+            break;
+            
+        default:
+            append_indent(gen);
+            append(gen, "/* unsupported stmt */\n");
+            break;
+    }
+}
+
+// Generate entity create function
+static void generate_entity_create(CodeGen* gen, EntityDecl* entity) {
+    // Lowercase the entity name for the function
+    char lower_name[256];
+    snprintf(lower_name, sizeof(lower_name), "%s", entity->name.lexeme);
+    for (int i = 0; lower_name[i]; i++) {
+        if (lower_name[i] >= 'A' && lower_name[i] <= 'Z') {
+            lower_name[i] = lower_name[i] + 32;  // to lowercase
+        }
+    }
+    
+    appendf(gen, "uint32_t %s_create(GameState* game, float x, float y) {\n", lower_name);
+    gen->indent_level++;
+    
+    // Create entity in engine
+    append_indent(gen);
+    append(gen, "uint32_t entity_id = entity_create(&game->registry, &game->transforms,\n");
+    append_indent(gen);
+    append(gen, "                                   &game->renderables, &game->circles, &game->rectangles);\n");
+    append(gen, "\n");
+    
+    // Set default collision (we'll make this configurable later)
+    append_indent(gen);
+    append(gen, "entity_set_collision(&game->registry, entity_id, COLLISION_NONE);\n");
+    append(gen, "\n");
+    
+    // Initialize engine components with defaults
+    append_indent(gen);
+    append(gen, "game->transforms.data[entity_id] = (transform_t){\n");
+    gen->indent_level++;
+    append_indent(gen);
+    append(gen, ".x = x, .y = y,\n");
+    append_indent(gen);
+    append(gen, ".image_xscale = 1.0f, .image_yscale = 1.0f,\n");
+    append_indent(gen);
+    append(gen, ".up = 1, .right = 1, .rotation_rad = 0.0f\n");
+    gen->indent_level--;
+    append_indent(gen);
+    append(gen, "};\n");
+    append(gen, "\n");
+    
+    append_indent(gen);
+    append(gen, "game->renderables.data[entity_id] = (Renderable){\n");
+    gen->indent_level++;
+    append_indent(gen);
+    append(gen, ".current_sprite_id = SPRITE_NONE,\n");
+    append_indent(gen);
+    append(gen, ".image_index = 0,\n");
+    append_indent(gen);
+    append(gen, ".frame_counter = 0.0f,\n");
+    append_indent(gen);
+    append(gen, ".image_speed = 0.0f\n");
+    gen->indent_level--;
+    append_indent(gen);
+    append(gen, "};\n");
+    append(gen, "\n");
+    
+    // Add to game-specific array (with realloc if needed)
+    appendf(gen, "    if (game->%ss.count >= game->%ss.capacity) {\n", lower_name, lower_name);
+    appendf(gen, "        game->%ss.capacity = game->%ss.capacity == 0 ? 8 : game->%ss.capacity * 2;\n", 
+            lower_name, lower_name, lower_name);
+    appendf(gen, "        game->%ss.data = realloc(game->%ss.data, sizeof(%s) * game->%ss.capacity);\n",
+            lower_name, lower_name, entity->name.lexeme, lower_name);
+    append(gen, "    }\n");
+    append(gen, "\n");
+    
+    // Initialize entity struct
+    appendf(gen, "    game->%ss.data[game->%ss.count++] = (%s){\n", 
+            lower_name, lower_name, entity->name.lexeme);
+    gen->indent_level++;
+    append_indent(gen);
+    append(gen, ".entity_id = entity_id");
+    
+    // Initialize custom fields to zero
+    for (int i = 0; i < entity->field_count; i++) {
+        append(gen, ",\n");
+        append_indent(gen);
+        appendf(gen, ".%s = 0", entity->fields[i].name.lexeme);
+    }
+    append(gen, "\n");
+    
+    gen->indent_level--;
+    append_indent(gen);
+    append(gen, "};\n");
+    append(gen, "\n");
+    
+    // Generate on_create code
+    if (entity->on_create) {
+        append_indent(gen);
+        appendf(gen, "// on_create\n");
+        append_indent(gen);
+        appendf(gen, "%s* entity = &game->%ss.data[game->%ss.count - 1];\n",
+                entity->name.lexeme, lower_name, lower_name);
+        generate_stmt(gen, entity->on_create, entity->name.lexeme);
+    }
+    
+    append_indent(gen);
+    append(gen, "return entity_id;\n");
+    
+    gen->indent_level--;
+    append(gen, "}\n\n");
+}
+
 void codegen_generate_program(CodeGen* gen, Program* program) {
     // Header includes
     append(gen, "#include <stdint.h>\n");
@@ -163,5 +372,8 @@ void codegen_generate_program(CodeGen* gen, Program* program) {
     // Generate GameState
     generate_game_state(gen, program);
     
-    append(gen, "// Entity lifecycle functions will go here\n");
+    // Generate entity lifecycle functions
+    for (int i = 0; i < program->entity_count; i++) {
+        generate_entity_create(gen, program->entities[i]);
+    }
 }

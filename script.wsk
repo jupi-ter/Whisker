@@ -1,3 +1,9 @@
 entity Player {
     float hsp;
+    float vsp;
+    
+    on_create {
+        self.hsp = 2.5;
+        self.vsp = 0;
+    }
 }

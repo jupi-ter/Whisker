@@ -41,6 +41,21 @@ static void print_expr_recursive(Expr* expr, int indent) {
             printf("Assign (%s)\n", expr->as.assign.name.lexeme);
             print_expr_recursive(expr->as.assign.value, indent + 1);
             break;
+
+        case EXPR_GET:
+            printf("Get\n");
+            print_expr_recursive(expr->as.get.object, indent + 1);
+            for (int i = 0; i < indent + 1; i++) printf("  ");
+            printf("Property: %s\n", expr->as.get.name.lexeme);
+            break;
+
+        case EXPR_SET:
+            printf("Set\n");
+            print_expr_recursive(expr->as.set.object, indent + 1);
+            for (int i = 0; i < indent + 1; i++) printf("  ");
+            printf("Property: %s\n", expr->as.set.name.lexeme);
+            print_expr_recursive(expr->as.set.value, indent + 1);
+            break;
     }
 }
 

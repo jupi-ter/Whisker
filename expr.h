@@ -12,7 +12,9 @@ typedef enum {
     EXPR_LITERAL,
     EXPR_GROUPING,
     EXPR_VARIABLE,
-    EXPR_ASSIGN
+    EXPR_ASSIGN,
+    EXPR_GET,  // member access
+    EXPR_SET  // member assignment
 } ExprType;
 
 typedef struct {
@@ -43,6 +45,17 @@ typedef struct {
     Expr* value;
 } AssignExpr;
 
+typedef struct {
+    Expr* object;  // The owner
+    Token name;    // The field being accessed
+} GetExpr;
+
+typedef struct {
+    Expr* object;
+    Token name;
+    Expr* value;
+} SetExpr;
+
 struct Expr {
     ExprType type;
     union {
@@ -52,6 +65,8 @@ struct Expr {
         GroupingExpr grouping;
         VariableExpr variable;
         AssignExpr assign;
+        GetExpr get;
+        SetExpr set;
     } as;
 };
 
@@ -61,6 +76,9 @@ Expr* expr_literal(Literal value);
 Expr* expr_grouping(Expr* expression);
 Expr* expr_variable(Token name);
 Expr* expr_assign(Token name, Expr* value);
+Expr* expr_get(Expr* object, Token name);
+Expr* expr_set(Expr* object, Token name, Expr* value);
+
 void expr_free(Expr* expr);
 
 #endif

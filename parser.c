@@ -72,6 +72,7 @@ static Expr* equality(Parser* parser);
 static Expr* comparison(Parser* parser);
 static Expr* term(Parser* parser);
 static Expr* factor(Parser* parser);
+static Expr* call(Parser* parser);
 static Expr* unary(Parser* parser);
 static Expr* primary(Parser* parser);
 
@@ -108,6 +109,10 @@ static Expr* primary(Parser* parser) {
         return expr_variable(previous(parser));
     }
     
+    if (match(parser, TOKEN_SELF)) {
+        return expr_variable(previous(parser));
+    }
+
     if (match(parser, TOKEN_LEFT_PAREN)) {
         Expr* expr = expression(parser);
         consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
@@ -121,6 +126,21 @@ static Expr* primary(Parser* parser) {
     return null_expr;
 }
 
+static Expr* call(Parser* parser) {
+    Expr* expr = primary(parser);
+    
+    while (true) {
+        if (match(parser, TOKEN_DOT)) {
+            Token name = consume(parser, TOKEN_IDENTIFIER, "Expect property name after '.'.");
+            expr = expr_get(expr, name);
+        } else {
+            break;
+        }
+    }
+    
+    return expr;
+}
+
 static Expr* unary(Parser* parser) {
     TokenType unary_ops[] = {TOKEN_BANG, TOKEN_MINUS};
     if (match_any(parser, unary_ops, 2)) {
@@ -129,7 +149,7 @@ static Expr* unary(Parser* parser) {
         return expr_unary(operator, right);
     }
     
-    return primary(parser);
+    return call(parser);
 }
 
 static Expr* factor(Parser* parser) {
@@ -220,6 +240,9 @@ static Expr* assignment(Parser* parser) {
             Token name = expr->as.variable.name;
             expr_free(expr);
             return expr_assign(name, value);
+        } else if (expr->type == EXPR_GET) {
+            // convert get to set: self.hsp = 5
+            return expr_set(expr->as.get.object, expr->as.get.name, value);
         }
         
         error_at_token(equals, "Invalid assignment target.");
@@ -332,8 +355,12 @@ static EntityDecl* entity_declaration(Parser* parser) {
         fields[field_count++] = (EntityField){ .name = field_name, .type = type };
     }
     
-    // For now, skip on_create
+     // Parse on_create block
     Stmt* on_create = NULL;
+    if (match(parser, TOKEN_ON_CREATE)) {
+        consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after on_create.");
+        on_create = block_statement(parser);  // Reuse block parsing!
+    }
     
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after entity body.");
     

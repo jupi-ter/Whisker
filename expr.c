@@ -66,6 +66,29 @@ Expr* expr_assign(Token name, Expr* value) {
     return expr;
 }
 
+Expr* expr_get(Expr* object, Token name) {
+    Expr* expr = malloc(sizeof(Expr));
+    if (!expr) error(error_messages[ERROR_MALLOCFAIL].message);
+
+    expr->type = EXPR_GET;
+    expr->as.get.object = object;
+    expr->as.get.name = name;
+
+    return expr;
+}
+
+Expr* expr_set(Expr* object, Token name, Expr* value) {
+    Expr* expr = malloc(sizeof(Expr));
+    if (!expr) error(error_messages[ERROR_MALLOCFAIL].message);
+
+    expr->type = EXPR_SET;
+    expr->as.set.object = object;
+    expr->as.set.name = name;
+    expr->as.set.value = value;
+
+    return expr;
+}
+
 void expr_free(Expr *expr) {
     if (!expr) return;
 
@@ -82,6 +105,13 @@ void expr_free(Expr *expr) {
             break;
         case EXPR_ASSIGN:
             expr_free(expr->as.assign.value);
+            break;
+        case EXPR_GET:
+            expr_free(expr->as.get.object);
+            break;
+        case EXPR_SET:
+            expr_free(expr->as.set.object);
+            expr_free(expr->as.set.value);
             break;
         case EXPR_LITERAL:
         case EXPR_VARIABLE:
