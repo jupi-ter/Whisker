@@ -9,6 +9,7 @@
 #include "error.h"
 #include "entity_ast.h"
 #include "printer.h"
+#include "codegen.h"
 
 int run(char* source) {
     Scanner scanner = scanner_create(source);
@@ -33,6 +34,12 @@ int run(char* source) {
             program.entities[i]->field_count);
     }
     printf("\n");
+
+    printf("=== GENERATED C CODE ===\n");
+    CodeGen codegen = codegen_create();
+    codegen_generate_program(&codegen, &program);
+    printf("%s\n", codegen_get_output(&codegen));
+    codegen_free(&codegen);
 
     free_program(&program);
     free_token_list(&tokens);

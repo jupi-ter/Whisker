@@ -3,6 +3,8 @@
 
 #include "stmt.h"
 #include "expr.h"
+#include "entity_ast.h"
+#include "parser.h"
 
 typedef struct {
     char* output;
@@ -13,7 +15,7 @@ typedef struct {
 
 CodeGen codegen_create(void);
 void codegen_free(CodeGen* gen);
-void codegen_generate(CodeGen* gen, Stmt** statements, int count);
+void codegen_generate_program(CodeGen* gen, Program* program);
 char* codegen_get_output(CodeGen* gen);
 
 #endif
