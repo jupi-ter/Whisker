@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "entity_ast.h"
 #include "error.h"
 #include <stdbool.h>
 #include <stdlib.h>
@@ -12,6 +13,8 @@ Parser parser_create(TokenList tokens) {
 
     return parser;
 }
+
+static EntityDecl* entity_declaration(Parser* parser);
 
 // ========= Parser utils ===========
 static Token peek(Parser* parser) {
@@ -291,34 +294,113 @@ static Stmt* declaration(Parser* parser) {
     return statement(parser);
 }
 
-StmtList parse(Parser* parser) {
-    int capacity = 8;
-    int count = 0;
-    Stmt** statements = malloc(sizeof(Stmt*) * capacity);
-    if (!statements) error(error_messages[ERROR_MALLOCFAIL].message);
+static FieldType parse_field_type(Parser* parser) {
+    if (match(parser, TOKEN_FLOAT)) return TYPE_FLOAT;
+    if (match(parser, TOKEN_INT)) return TYPE_INT;
+    if (match(parser, TOKEN_BOOL)) return TYPE_BOOL;
+    if (match(parser, TOKEN_UINT32)) return TYPE_UINT32;
     
-    while (!is_at_end(parser)) {
-        if (count >= capacity) {
-            capacity *= 2;
-            Stmt** new_stmts = realloc(statements, sizeof(Stmt*) * capacity);
-            if (!new_stmts) {
-                for (int i = 0; i < count; i++) stmt_free(statements[i]);
-                free(statements);
-                error(error_messages[ERROR_REALLOCFAIL].message);
-            }
-            statements = new_stmts;
-        }
-        
-        statements[count++] = declaration(parser);
-    }
-    
-    StmtList result = { .statements = statements, .count = count };
-    return result;
+    error_at_token(peek(parser), "Expected type (float, int, bool, uint32)");
+    return TYPE_FLOAT; // unreachable
 }
 
-void free_stmt_list(StmtList* list) {
-    for (int i = 0; i < list->count; i++) {
-        stmt_free(list->statements[i]);
+static EntityDecl* entity_declaration(Parser* parser) {
+    Token name = consume(parser, TOKEN_IDENTIFIER, "Expect entity name.");
+    consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after entity name.");
+    
+    // Parse fields
+    int field_capacity = 8;
+    int field_count = 0;
+    EntityField* fields = malloc(sizeof(EntityField) * field_capacity);
+    if (!fields) error(error_messages[ERROR_MALLOCFAIL].message);
+    
+    while (!check(parser, TOKEN_RIGHT_BRACE) && !check(parser, TOKEN_ON_CREATE) && !is_at_end(parser)) {
+        if (field_count >= field_capacity) {
+            field_capacity *= 2;
+            EntityField* new_fields = realloc(fields, sizeof(EntityField) * field_capacity);
+            if (!new_fields) {
+                free(fields);
+                error(error_messages[ERROR_REALLOCFAIL].message);
+            }
+            fields = new_fields;
+        }
+        
+        FieldType type = parse_field_type(parser);
+        Token field_name = consume(parser, TOKEN_IDENTIFIER, "Expect field name.");
+        consume(parser, TOKEN_SEMICOLON, "Expect ';' after field declaration.");
+        
+        fields[field_count++] = (EntityField){ .name = field_name, .type = type };
     }
-    free(list->statements);
+    
+    // For now, skip on_create
+    Stmt* on_create = NULL;
+    
+    consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after entity body.");
+    
+    return entity_decl_create(name, fields, field_count, on_create);
+}
+
+Program parse(Parser* parser) {
+    int stmt_capacity = 8;
+    int stmt_count = 0;
+    Stmt** statements = malloc(sizeof(Stmt*) * stmt_capacity);
+    if (!statements) error(error_messages[ERROR_MALLOCFAIL].message);
+    
+    int entity_capacity = 8;
+    int entity_count = 0;
+    EntityDecl** entities = malloc(sizeof(EntityDecl*) * entity_capacity);
+    if (!entities) {
+        free(statements);
+        error(error_messages[ERROR_MALLOCFAIL].message);
+    }
+    
+    while (!is_at_end(parser)) {
+        // Check if it's an entity declaration
+        if (match(parser, TOKEN_ENTITY)) {
+            if (entity_count >= entity_capacity) {
+                entity_capacity *= 2;
+                EntityDecl** new_entities = realloc(entities, sizeof(EntityDecl*) * entity_capacity);
+                if (!new_entities) {
+                    free(statements);
+                    free(entities);
+                    error(error_messages[ERROR_REALLOCFAIL].message);
+                }
+                entities = new_entities;
+            }
+            entities[entity_count++] = entity_declaration(parser);
+        } else {
+            // Regular statement
+            if (stmt_count >= stmt_capacity) {
+                stmt_capacity *= 2;
+                Stmt** new_stmts = realloc(statements, sizeof(Stmt*) * stmt_capacity);
+                if (!new_stmts) {
+                    free(statements);
+                    free(entities);
+                    error(error_messages[ERROR_REALLOCFAIL].message);
+                }
+                statements = new_stmts;
+            }
+            statements[stmt_count++] = declaration(parser);
+        }
+    }
+    
+    Program prog = {
+        .statements = statements,
+        .count = stmt_count,
+        .entities = entities,
+        .entity_count = entity_count
+    };
+    return prog;
+}
+
+void free_program(Program* prog) {
+    for (int i = 0; i < prog->count; i++) {
+        stmt_free(prog->statements[i]);
+    }
+    free(prog->statements);
+    
+    for (int i = 0; i < prog->entity_count; i++) {
+        entity_decl_free(prog->entities[i]);
+    }
+    free(prog->entities);
 }

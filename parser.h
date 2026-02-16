@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "entity_ast.h"
 #include "token.h"
 #include "expr.h"
 #include "stmt.h"
@@ -14,10 +15,12 @@ typedef struct {
 typedef struct {
     Stmt** statements;
     int count;
-} StmtList;
+    EntityDecl** entities;
+    int entity_count;
+} Program;
 
 Parser parser_create(TokenList tokens);
-StmtList parse(Parser* parser);
-void free_stmt_list(StmtList* list);
+Program parse(Parser* parser);
+void free_program(Program* prog);
 
 #endif

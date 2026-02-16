@@ -1,7 +1,3 @@
-var x = 5;
-var y = 10;
-print x + y;
-{
-    var z = 20;
-    print z;
+entity Player {
+    float hsp;
 }

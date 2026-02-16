@@ -7,6 +7,7 @@
 #include "parser.h"
 #include "token.h"
 #include "error.h"
+#include "entity_ast.h"
 #include "printer.h"
 
 int run(char* source) {
@@ -20,13 +21,20 @@ int run(char* source) {
     printf("\n");
 
     Parser parser = parser_create(tokens);
-    StmtList program = parse(&parser);
+    Program program = parse(&parser);
 
     printf("=== AST ===\n");
     print_program(program.statements, program.count);
+    printf("\n=== ENTITIES ===\n");
+    printf("Found %d entities\n", program.entity_count);
+    for (int i = 0; i < program.entity_count; i++) {
+        printf("Entity: %s (%d fields)\n", 
+            program.entities[i]->name.lexeme,
+            program.entities[i]->field_count);
+    }
     printf("\n");
 
-    free_stmt_list(&program);
+    free_program(&program);
     free_token_list(&tokens);
 
     return 0;
