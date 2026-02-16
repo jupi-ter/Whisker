@@ -5,5 +5,8 @@ entity Player {
     on_create {
         self.hsp = 2.5;
         self.vsp = 0;
+        transform.x = 100;
+        transform.y = 50;
+        renderable.image_speed = 0.2;
     }
 }

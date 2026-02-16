@@ -113,6 +113,18 @@ static Expr* primary(Parser* parser) {
         return expr_variable(previous(parser));
     }
 
+    if (match(parser, TOKEN_TRANSFORM)) {
+        return expr_variable(previous(parser));
+    }
+
+    if (match(parser, TOKEN_RENDERABLE)) {
+        return expr_variable(previous(parser));
+    }
+    
+    if (match(parser, TOKEN_COLLISION)) {
+        return expr_variable(previous(parser));
+    }
+
     if (match(parser, TOKEN_LEFT_PAREN)) {
         Expr* expr = expression(parser);
         consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after expression.");

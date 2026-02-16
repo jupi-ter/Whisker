@@ -98,6 +98,12 @@ char* token_type_to_string(TokenType type) {
             return "uint32";
         case TOKEN_EOF:
             return "eof";
+        case TOKEN_TRANSFORM:
+            return "transform";
+        case TOKEN_RENDERABLE:
+            return "renderable";
+        case TOKEN_COLLISION:
+            return "collision";
     }
     return "";
 }

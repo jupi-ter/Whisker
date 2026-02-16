@@ -160,15 +160,22 @@ static void generate_expr(CodeGen* gen, Expr* expr, const char* entity_name) {
             }
             break;
             
-        case EXPR_VARIABLE:
-            // Check if it's "self" - if so, convert to entity pointer access
-            if (strcmp(expr->as.variable.name.lexeme, "self") == 0) {
-                append(gen, "entity");  // The entity pointer variable name
+        case EXPR_VARIABLE: {
+            const char* varname = expr->as.variable.name.lexeme;
+            
+            if (strcmp(varname, "self") == 0) {
+                append(gen, "entity");
+            } else if (strcmp(varname, "transform") == 0) {
+                append(gen, "(&game->transforms.data[eid])");
+            } else if (strcmp(varname, "renderable") == 0) {
+                append(gen, "(&game->renderables.data[eid])");
+            } else if (strcmp(varname, "collision") == 0) {
+                append(gen, "/* collision - needs runtime type check */");
             } else {
-                // Regular variable
-                append(gen, expr->as.variable.name.lexeme);
+                append(gen, varname);
             }
             break;
+        }
             
         case EXPR_BINARY:
             generate_expr(gen, expr->as.binary.left, entity_name);
@@ -342,6 +349,10 @@ static void generate_entity_create(CodeGen* gen, EntityDecl* entity) {
         append_indent(gen);
         appendf(gen, "%s* entity = &game->%ss.data[game->%ss.count - 1];\n",
                 entity->name.lexeme, lower_name, lower_name);
+        append_indent(gen);
+        append(gen, "uint32_t eid = entity->entity_id;  // For component access\n");
+        
+        // Generate statements with eid available
         generate_stmt(gen, entity->on_create, entity->name.lexeme);
     }
     
