@@ -1,18 +1,36 @@
 entity Player {
     float hsp;
-    bool moving_right;
+    float vsp;
     
     on_create {
         self.hsp = 0;
-        self.moving_right = true;
+        self.vsp = 0;
     }
     
     on_update {
-        if (self.moving_right) {
-            self.hsp = 2;
-        } else {
-            self.hsp = -2;
-        }
+        self.hsp = 2;
         transform.x = transform.x + self.hsp;
+    }
+    
+    on_destroy {
+        self.hsp = 0;
+    }
+}
+
+entity Enemy {
+    float speed;
+    int health;
+    
+    on_create {
+        self.speed = 1;
+        self.health = 3;
+    }
+    
+    on_update {
+        transform.x = transform.x + self.speed;
+    }
+    
+    on_destroy {
+        self.health = 0;
     }
 }

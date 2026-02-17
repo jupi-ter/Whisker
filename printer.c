@@ -109,6 +109,16 @@ static void print_stmt_recursive(Stmt* stmt, int indent) {
                 print_stmt_recursive(stmt->as.if_stmt.else_branch, indent + 2);
             }
             break;
+
+        case STMT_WHILE:
+            printf("WhileStmt\n");
+            for (int i = 0; i < indent + 1; i++) printf("  ");
+            printf("Condition:\n");
+            print_expr_recursive(stmt->as.while_stmt.condition, indent + 2);
+            for (int i = 0; i < indent + 1; i++) printf("  ");
+            printf("Body:\n");
+            print_stmt_recursive(stmt->as.while_stmt.body, indent + 2);
+            break;
     }
 }
 

@@ -270,6 +270,18 @@ static void generate_stmt(CodeGen* gen, Stmt* stmt, const char* entity_name) {
             append(gen, "\n");
             break;
 
+        case STMT_WHILE:
+            append_indent(gen);
+            append(gen, "while (");
+            generate_expr(gen, stmt->as.while_stmt.condition, entity_name);
+            append(gen, ") {\n");
+            gen->indent_level++;
+            generate_stmt(gen, stmt->as.while_stmt.body, entity_name);
+            gen->indent_level--;
+            append_indent(gen);
+            append(gen, "}\n");
+            break;
+
         default:
             append_indent(gen);
             append(gen, "/* unsupported stmt */\n");
@@ -436,6 +448,122 @@ static void generate_entity_update(CodeGen* gen, EntityDecl* entity) {
     append(gen, "}\n\n");
 }
 
+static void generate_entity_destroy(CodeGen* gen, EntityDecl* entity, Program* program) {
+    char lower_name[256];
+    snprintf(lower_name, sizeof(lower_name), "%s", entity->name.lexeme);
+    for (int i = 0; lower_name[i]; i++) {
+        if (lower_name[i] >= 'A' && lower_name[i] <= 'Z') {
+            lower_name[i] = lower_name[i] + 32;
+        }
+    }
+    
+    appendf(gen, "void %s_destroy(GameState* game, uint32_t entity_id) {\n", lower_name);
+    gen->indent_level++;
+    
+    // Run on_destroy user code first
+    if (entity->on_destroy) {
+        append_indent(gen);
+        appendf(gen, "%s* entity = NULL;\n", entity->name.lexeme);
+        append_indent(gen);
+        appendf(gen, "for (int i = 0; i < game->%ss.count; i++) {\n", lower_name);
+        gen->indent_level++;
+        append_indent(gen);
+        appendf(gen, "if (game->%ss.data[i].entity_id == entity_id) {\n", lower_name);
+        gen->indent_level++;
+        append_indent(gen);
+        appendf(gen, "entity = &game->%ss.data[i];\n", lower_name);
+        append_indent(gen);
+        append(gen, "break;\n");
+        gen->indent_level--;
+        append_indent(gen);
+        append(gen, "}\n");
+        gen->indent_level--;
+        append_indent(gen);
+        append(gen, "}\n");
+        
+        append_indent(gen);
+        append(gen, "if (!entity) return;\n");
+        append_indent(gen);
+        append(gen, "uint32_t eid = entity_id;\n");
+        append_indent(gen);
+        append(gen, "// on_destroy\n");
+        generate_stmt(gen, entity->on_destroy, entity->name.lexeme);
+        append(gen, "\n");
+    }
+    
+    // Call engine destroy (swap-and-pop)
+    append_indent(gen);
+    append(gen, "int moved_id = entity_destroy(&game->registry, entity_id,\n");
+    append_indent(gen);
+    append(gen, "    &game->transforms, &game->renderables,\n");
+    append_indent(gen);
+    append(gen, "    &game->circles, &game->rectangles);\n");
+    append(gen, "\n");
+    
+    // Remove from this entity's array
+    append_indent(gen);
+    appendf(gen, "for (int i = 0; i < game->%ss.count; i++) {\n", lower_name);
+    gen->indent_level++;
+    append_indent(gen);
+    appendf(gen, "if (game->%ss.data[i].entity_id == entity_id) {\n", lower_name);
+    gen->indent_level++;
+    append_indent(gen);
+    appendf(gen, "game->%ss.data[i] = game->%ss.data[game->%ss.count - 1];\n",
+            lower_name, lower_name, lower_name);
+    append_indent(gen);
+    appendf(gen, "game->%ss.count--;\n", lower_name);
+    append_indent(gen);
+    append(gen, "break;\n");
+    gen->indent_level--;
+    append_indent(gen);
+    append(gen, "}\n");
+    gen->indent_level--;
+    append_indent(gen);
+    append(gen, "}\n");
+    append(gen, "\n");
+    
+    // Update moved entity references in ALL entity arrays
+    append_indent(gen);
+    append(gen, "// Fix moved entity references (swap-and-pop)\n");
+    append_indent(gen);
+    append(gen, "if (moved_id != -1) {\n");
+    gen->indent_level++;
+    
+    for (int i = 0; i < program->entity_count; i++) {
+        char other_lower[256];
+        snprintf(other_lower, sizeof(other_lower), "%s", program->entities[i]->name.lexeme);
+        for (int j = 0; other_lower[j]; j++) {
+            if (other_lower[j] >= 'A' && other_lower[j] <= 'Z') {
+                other_lower[j] = other_lower[j] + 32;
+            }
+        }
+        
+        append_indent(gen);
+        appendf(gen, "for (int i = 0; i < game->%ss.count; i++) {\n", other_lower);
+        gen->indent_level++;
+        append_indent(gen);
+        appendf(gen, "if (game->%ss.data[i].entity_id == (uint32_t)moved_id) {\n", other_lower);
+        gen->indent_level++;
+        append_indent(gen);
+        appendf(gen, "game->%ss.data[i].entity_id = entity_id;\n", other_lower);
+        append_indent(gen);
+        append(gen, "break;\n");
+        gen->indent_level--;
+        append_indent(gen);
+        append(gen, "}\n");
+        gen->indent_level--;
+        append_indent(gen);
+        append(gen, "}\n");
+    }
+
+    gen->indent_level--;
+    append_indent(gen);
+    append(gen, "}\n");
+    
+    gen->indent_level--;
+    append(gen, "}\n\n");
+}
+
 void codegen_generate_program(CodeGen* gen, Program* program) {
     // Header includes
     append(gen, "#include <stdint.h>\n");
@@ -460,5 +588,6 @@ void codegen_generate_program(CodeGen* gen, Program* program) {
     for (int i = 0; i < program->entity_count; i++) {
         generate_entity_create(gen, program->entities[i]);
         generate_entity_update(gen, program->entities[i]);
+        generate_entity_destroy(gen, program->entities[i], program);
     }
 }

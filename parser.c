@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "entity_ast.h"
 #include "error.h"
+#include "token.h"
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -84,6 +85,8 @@ static Stmt* expression_statement(Parser* parser);
 static Stmt* var_declaration(Parser* parser);
 static Stmt* block_statement(Parser* parser);
 static Stmt* if_statement(Parser* parser);
+static Stmt* while_statement(Parser* parser);
+static Stmt* for_statement(Parser* parser);
 
 static Expr* primary(Parser* parser) {
     if (match(parser, TOKEN_FALSE)) {
@@ -309,6 +312,73 @@ static Stmt* if_statement(Parser* parser) {
     return stmt_if(condition, then_branch, else_branch);
 }
 
+static Stmt* while_statement(Parser* parser) {
+    consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
+    Expr* condition = expression(parser);
+    consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after while condition.");
+    
+    Stmt* body = statement(parser);
+    
+    return stmt_while(condition, body);
+}
+
+static Stmt* for_statement(Parser* parser) {
+    consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
+    
+    // Initializer: var i = 0; OR i = 0; OR nothing
+    Stmt* initializer = NULL;
+    if (match(parser, TOKEN_SEMICOLON)) {
+        initializer = NULL;  // No initializer
+    } else if (match(parser, TOKEN_VAR)) {
+        initializer = var_declaration(parser);
+    } else {
+        initializer = expression_statement(parser);
+    }
+    
+    // Condition: i < 10
+    Expr* condition = NULL;
+    if (!check(parser, TOKEN_SEMICOLON)) {
+        condition = expression(parser);
+    }
+    consume(parser, TOKEN_SEMICOLON, "Expect ';' after for condition.");
+    
+    // Increment: i = i + 1
+    Expr* increment = NULL;
+    if (!check(parser, TOKEN_RIGHT_PAREN)) {
+        increment = expression(parser);
+    }
+    consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
+    
+    Stmt* body = statement(parser);
+    
+    // Desugar: attach increment to end of body
+    if (increment) {
+        Stmt* inc_stmt = stmt_expression(increment);
+        Stmt** stmts = malloc(sizeof(Stmt*) * 2);
+        stmts[0] = body;
+        stmts[1] = inc_stmt;
+        body = stmt_block(stmts, 2);
+    }
+    
+    // Desugar: wrap in while
+    if (!condition) {
+        // No condition means infinite loop: while (true)
+        Literal lit = { .type = LITERAL_BOOLEAN, .as.boolean = true };
+        condition = expr_literal(lit);
+    }
+    body = stmt_while(condition, body);
+    
+    // Desugar: prepend initializer
+    if (initializer) {
+        Stmt** stmts = malloc(sizeof(Stmt*) * 2);
+        stmts[0] = initializer;
+        stmts[1] = body;
+        body = stmt_block(stmts, 2);
+    }
+    
+    return body;
+}
+
 static Stmt* var_declaration(Parser* parser) {
     Token name = consume(parser, TOKEN_IDENTIFIER, "Expect variable name.");
     
@@ -336,6 +406,8 @@ static Stmt* expression_statement(Parser* parser) {
 static Stmt* statement(Parser* parser) {
     if (match(parser, TOKEN_PRINT)) return print_statement(parser);
     if (match(parser, TOKEN_IF)) return if_statement(parser);
+    if (match(parser, TOKEN_WHILE)) return while_statement(parser);
+    if (match(parser, TOKEN_FOR)) return for_statement(parser);
     if (match(parser, TOKEN_LEFT_BRACE)) return block_statement(parser);
     
     return expression_statement(parser);
@@ -369,6 +441,7 @@ static EntityDecl* entity_declaration(Parser* parser) {
     while (!check(parser, TOKEN_RIGHT_BRACE) &&
             !check(parser, TOKEN_ON_CREATE) &&
             !check(parser, TOKEN_ON_UPDATE) &&
+            !check(parser, TOKEN_ON_DESTROY) &&
             !is_at_end(parser)) {
         if (field_count >= field_capacity) {
             field_capacity *= 2;
@@ -387,23 +460,30 @@ static EntityDecl* entity_declaration(Parser* parser) {
         fields[field_count++] = (EntityField){ .name = field_name, .type = type };
     }
     
-    // Parse on_create block
+    // parse lifecycle blocks
     Stmt* on_create = NULL;
-    if (match(parser, TOKEN_ON_CREATE)) {
-        consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after on_create.");
-        on_create = block_statement(parser);  // Reuse block parsing!
-    }
-    
-    // Parse on_update block
     Stmt* on_update = NULL;
-    if (match(parser, TOKEN_ON_UPDATE)) {
-        consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after on_update.");
-        on_update = block_statement(parser);
+    Stmt* on_destroy = NULL;
+
+    // in any order
+    while (!check(parser, TOKEN_RIGHT_BRACE)) {
+        if (match(parser, TOKEN_ON_CREATE)) {
+            consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after on_create.");
+            on_create = block_statement(parser);
+        } else if (match(parser, TOKEN_ON_UPDATE)) {
+            consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after on_update.");
+            on_update = block_statement(parser);
+        } else if (match(parser, TOKEN_ON_DESTROY)) {
+            consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after on_destroy.");
+            on_destroy = block_statement(parser);
+        } else {
+            error_at_token(peek(parser), "Expect on_create, on_update, or on_destroy.");
+        }
     }
 
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after entity body.");
     
-    return entity_decl_create(name, fields, field_count, on_create, on_update);
+    return entity_decl_create(name, fields, field_count, on_create, on_update, on_destroy);
 }
 
 Program parse(Parser* parser) {

@@ -22,6 +22,7 @@ typedef struct {
     int field_count;
     Stmt* on_create;         // on_create block - nullable.
     Stmt* on_update;
+    Stmt* on_destroy;
 } EntityDecl;
 
 typedef struct {
@@ -29,7 +30,7 @@ typedef struct {
     int count;
 } EntityList;
 
-EntityDecl* entity_decl_create(Token name, EntityField* fields, int field_count, Stmt* on_create, Stmt* on_update);
+EntityDecl* entity_decl_create(Token name, EntityField* fields, int field_count, Stmt* on_create, Stmt* on_update, Stmt* on_destroy);
 void entity_decl_free(EntityDecl* entity);
 
 #endif

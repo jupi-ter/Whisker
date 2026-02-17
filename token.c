@@ -106,6 +106,8 @@ char* token_type_to_string(TokenType type) {
             return "collision";
         case TOKEN_ON_UPDATE:
             return "on_update";
+        case TOKEN_ON_DESTROY:
+            return "on_destroy";
     }
     return "";
 }

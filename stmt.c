@@ -56,6 +56,17 @@ Stmt* stmt_if(Expr* condition, Stmt* then_branch, Stmt* else_branch) {
     return stmt;
 }
 
+Stmt* stmt_while(Expr* condition, Stmt* body) {
+    Stmt* stmt = malloc(sizeof(Stmt));
+    if (!stmt) error(error_messages[ERROR_MALLOCFAIL].message);
+    
+    stmt->type = STMT_WHILE;
+    stmt->as.while_stmt.condition = condition;
+    stmt->as.while_stmt.body = body;
+    
+    return stmt;
+}
+
 void stmt_free(Stmt* stmt) {
     if (!stmt) return;
     
@@ -79,6 +90,10 @@ void stmt_free(Stmt* stmt) {
             expr_free(stmt->as.if_stmt.condition);
             stmt_free(stmt->as.if_stmt.then_branch);
             stmt_free(stmt->as.if_stmt.else_branch);
+            break;
+        case STMT_WHILE:
+            expr_free(stmt->as.while_stmt.condition);
+            stmt_free(stmt->as.while_stmt.body);
             break;
     }
     
