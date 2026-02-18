@@ -5,6 +5,7 @@
 #include "token.h"
 #include "expr.h"
 #include "stmt.h"
+#include "game_ast.h"
 
 typedef struct {
     Token* tokens;
@@ -17,6 +18,7 @@ typedef struct {
     int count;
     EntityDecl** entities;
     int entity_count;
+    GameDecl* game; // nullable
 } Program;
 
 Parser parser_create(TokenList tokens);

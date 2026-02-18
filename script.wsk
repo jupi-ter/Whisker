@@ -3,7 +3,7 @@ entity Player {
     float vsp;
     
     on_create {
-        self.hsp = 0;
+        self.hsp = 2;
         self.vsp = 0;
         renderable.current_sprite_id = 2;
         renderable.image_speed = 0.1;
@@ -18,4 +18,8 @@ entity Player {
     on_destroy {
         self.hsp = 0;
     }
+}
+
+game {
+    spawn Player(64, 64);
 }

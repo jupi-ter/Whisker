@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "entity_ast.h"
 #include "error.h"
+#include "game_ast.h"
 #include "token.h"
 #include <stdbool.h>
 #include <stdlib.h>
@@ -486,7 +487,52 @@ static EntityDecl* entity_declaration(Parser* parser) {
     return entity_decl_create(token_copy(name), fields, field_count, on_create, on_update, on_destroy);
 }
 
+static GameDecl* game_declaration(Parser* parser) {
+    consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after 'game'.");
+    
+    int capacity = 8;
+    int count = 0;
+    SpawnCall* spawns = malloc(sizeof(SpawnCall) * capacity);
+    if (!spawns) error(error_messages[ERROR_MALLOCFAIL].message);
+    
+    while (!check(parser, TOKEN_RIGHT_BRACE) && !is_at_end(parser)) {
+        consume(parser, TOKEN_SPAWN, "Expect 'spawn' in game block.");
+        
+        Token entity_name = consume(parser, TOKEN_IDENTIFIER, "Expect entity name after 'spawn'.");
+        consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after entity name.");
+        
+        // Parse x coordinate
+        Token x_token = consume(parser, TOKEN_NUMBER, "Expect x coordinate.");
+        consume(parser, TOKEN_COMMA, "Expect ',' after x coordinate.");
+        
+        // Parse y coordinate
+        Token y_token = consume(parser, TOKEN_NUMBER, "Expect y coordinate.");
+        consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after coordinates.");
+        consume(parser, TOKEN_SEMICOLON, "Expect ';' after spawn call.");
+        
+        if (count >= capacity) {
+            capacity *= 2;
+            SpawnCall* new_spawns = realloc(spawns, sizeof(SpawnCall) * capacity);
+            if (!new_spawns) {
+                free(spawns);
+                error(error_messages[ERROR_REALLOCFAIL].message);
+            }
+            spawns = new_spawns;
+        }
+        
+        spawns[count++] = (SpawnCall){
+            .entity_name = entity_name,
+            .x = (float)x_token.literal.as.number,
+            .y = (float)y_token.literal.as.number
+        };
+    }
+    
+    consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after game block.");
+    return game_decl_create(spawns, count);
+}
+
 Program parse(Parser* parser) {
+    GameDecl* game = NULL;
     int stmt_capacity = 8;
     int stmt_count = 0;
     Stmt** statements = malloc(sizeof(Stmt*) * stmt_capacity);
@@ -514,6 +560,9 @@ Program parse(Parser* parser) {
                 entities = new_entities;
             }
             entities[entity_count++] = entity_declaration(parser);
+        } else if (match(parser, TOKEN_GAME)) {
+            if (game) error_at_token(peek(parser), "Only one 'game' block allowed.");
+            game = game_declaration(parser);
         } else {
             // Regular statement
             if (stmt_count >= stmt_capacity) {
@@ -534,12 +583,14 @@ Program parse(Parser* parser) {
         .statements = statements,
         .count = stmt_count,
         .entities = entities,
-        .entity_count = entity_count
+        .entity_count = entity_count,
+        .game = game //GAME IS GAME
     };
     return prog;
 }
 
 void free_program(Program* prog) {
+    game_decl_free(prog->game);
     for (int i = 0; i < prog->count; i++) {
         stmt_free(prog->statements[i]);
     }
