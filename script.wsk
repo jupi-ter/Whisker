@@ -1,7 +1,8 @@
 entity Player {
     float hsp;
     float vsp;
-    
+    int move;
+
     on_create {
         self.hsp = 2;
         self.vsp = 0;
@@ -10,11 +11,11 @@ entity Player {
         transform.x = 64;
         transform.y = 64;
     }
-    
+
     on_update {
         transform.x = transform.x + self.hsp;
     }
-    
+
     on_destroy {
         self.hsp = 0;
     }

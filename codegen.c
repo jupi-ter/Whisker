@@ -601,7 +601,7 @@ static void generate_entity_destroy(CodeGen* gen, EntityDecl* entity, Program* p
 static void generate_game_init(CodeGen* gen, Program* program) {
     append(gen, "void game_init(GameState* game) {\n");
     gen->indent_level++;
-    
+
     // Initialize all entity arrays
     for (int i = 0; i < program->entity_count; i++) {
         char lower_name[256];
@@ -609,9 +609,9 @@ static void generate_game_init(CodeGen* gen, Program* program) {
         for (int j = 0; lower_name[j]; j++) {
             if (lower_name[j] >= 'A' && lower_name[j] <= 'Z') lower_name[j] += 32;
         }
-        
+
         append_indent(gen);
-        appendf(gen, "game->%ss.data = malloc(sizeof(%s) * 8);\n", 
+        appendf(gen, "game->%ss.data = malloc(sizeof(%s) * 8);\n",
                 lower_name, program->entities[i]->name.lexeme);
         append_indent(gen);
         appendf(gen, "game->%ss.capacity = 8;\n", lower_name);
@@ -619,7 +619,7 @@ static void generate_game_init(CodeGen* gen, Program* program) {
         appendf(gen, "game->%ss.count = 0;\n", lower_name);
         append(gen, "\n");
     }
-    
+
     // Generate spawn calls from game block
     if (program->game) {
         for (int i = 0; i < program->game->spawn_count; i++) {
@@ -629,13 +629,13 @@ static void generate_game_init(CodeGen* gen, Program* program) {
             for (int j = 0; lower_name[j]; j++) {
                 if (lower_name[j] >= 'A' && lower_name[j] <= 'Z') lower_name[j] += 32;
             }
-            
+
             append_indent(gen);
-            appendf(gen, "%s_create(game, %g, %g);\n", 
+            appendf(gen, "%s_create(game, %g, %g);\n",
                     lower_name, spawn.x, spawn.y);
         }
     }
-    
+
     gen->indent_level--;
     append(gen, "}\n\n");
 }
@@ -695,6 +695,7 @@ void codegen_generate_program(CodeGen* gen, Program* program) {
     append_h(gen, "#include <stdbool.h>\n");
     append_h(gen, "#include <stdlib.h>\n");
     append_h(gen, "#include \"forward.h\"\n\n"); //forward declarations, i don't know if these are required.
+    append_h(gen, "#include \"input.h\"\n\n");
     append_h(gen, "#include \"entity.h\"\n");
     append_h(gen, "#include \"transform.h\"\n");
     append_h(gen, "#include \"renderable.h\"\n");
