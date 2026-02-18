@@ -30,6 +30,10 @@ void codegen_free(CodeGen* gen) {
     free(gen->source_output);
     gen->header_output = NULL;
     gen->source_output = NULL;
+    gen->header_capacity = 0;
+    gen->header_length = 0;
+    gen->source_capacity = 0;
+    gen->source_length = 0;
 }
 
 //char* codegen_get_output(CodeGen* gen) {
