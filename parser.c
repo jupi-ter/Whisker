@@ -150,6 +150,31 @@ static Expr* call(Parser* parser) {
         if (match(parser, TOKEN_DOT)) {
             Token name = consume(parser, TOKEN_IDENTIFIER, "Expect property name after '.'.");
             expr = expr_get(expr, name);
+        } else if (match(parser, TOKEN_LEFT_PAREN)) {
+            // Function call!
+            // For now, just parse arguments and wrap in a special call expr
+            
+            // Parse arguments
+            int arg_count = 0;
+            Expr** arguments = NULL;
+            
+            if (!check(parser, TOKEN_RIGHT_PAREN)) {
+                int capacity = 4;
+                arguments = malloc(sizeof(Expr*) * capacity);
+                
+                do {
+                    if (arg_count >= capacity) {
+                        capacity *= 2;
+                        arguments = realloc(arguments, sizeof(Expr*) * capacity);
+                    }
+                    arguments[arg_count++] = expression(parser);
+                } while (match(parser, TOKEN_COMMA));
+            }
+            
+            consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+            
+            // Create a call expression
+            expr = expr_call(expr, arg_count, arguments);
         } else {
             break;
         }

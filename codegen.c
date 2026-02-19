@@ -246,6 +246,18 @@ static void generate_expr(CodeGen* gen, Expr* expr, const char* entity_name) {
             generate_expr(gen, expr->as.set.value, entity_name);
             break;
 
+        case EXPR_CALL: {
+            // Generate: function_name(arg1, arg2, ...)
+            generate_expr(gen, expr->as.call.callee, entity_name);
+            append(gen, "(");
+            for (int i = 0; i < expr->as.call.argc; i++) {
+                if (i > 0) append(gen, ", ");
+                generate_expr(gen, expr->as.call.argv[i], entity_name);
+            }
+            append(gen, ")");
+            break;
+        }
+
         default:
             append(gen, "/* unsupported expr */");
             break;

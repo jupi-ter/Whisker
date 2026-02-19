@@ -1,21 +1,27 @@
 entity Player {
     float hsp;
     float vsp;
-    int move;
-
+    
     on_create {
-        self.hsp = 2;
+        self.hsp = 0;
         self.vsp = 0;
         renderable.current_sprite_id = 2;
         renderable.image_speed = 0.1;
-        transform.x = 64;
-        transform.y = 64;
     }
-
+    
     on_update {
+        self.hsp = 0;
+        
+        if (keyboard_check(KEY_RIGHT)) {
+            self.hsp = 2;
+        }
+        if (keyboard_check(KEY_LEFT)) {
+            self.hsp = -2;
+        }
+        
         transform.x = transform.x + self.hsp;
     }
-
+    
     on_destroy {
         self.hsp = 0;
     }

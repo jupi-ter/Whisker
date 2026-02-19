@@ -88,6 +88,18 @@ Expr* expr_set(Expr* object, Token name, Expr* value) {
     return expr;
 }
 
+Expr* expr_call(Expr* callee, int argc, Expr** argv) {
+    Expr* expr = malloc(sizeof(Expr));
+    if (!expr) error(error_messages[ERROR_MALLOCFAIL].message);
+
+    expr->type = EXPR_CALL;
+    expr->as.call.callee = callee;
+    expr->as.call.argv = argv;
+    expr->as.call.argc = argc;
+
+    return expr;
+}
+
 void expr_free(Expr *expr) {
     if (!expr) return;
 
@@ -117,6 +129,13 @@ void expr_free(Expr *expr) {
             free(expr->as.set.name.lexeme);
             expr_free(expr->as.set.object);
             expr_free(expr->as.set.value);
+            break;
+        case EXPR_CALL:
+            expr_free(expr->as.call.callee);
+            for (int i = 0; i < expr->as.call.argc; i++) {
+                expr_free(expr->as.call.argv[i]);
+            }
+            free(expr->as.call.argv);
             break;
         case EXPR_LITERAL:
             break;

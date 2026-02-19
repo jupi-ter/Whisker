@@ -14,7 +14,8 @@ typedef enum {
     EXPR_VARIABLE,
     EXPR_ASSIGN,
     EXPR_GET,  // member access
-    EXPR_SET  // member assignment
+    EXPR_SET,  // member assignment
+    EXPR_CALL //function calls
 } ExprType;
 
 typedef struct {
@@ -56,6 +57,12 @@ typedef struct {
     Expr* value;
 } SetExpr;
 
+typedef struct {
+    Expr* callee;
+    int argc;
+    Expr** argv;
+} CallExpr;
+
 struct Expr {
     ExprType type;
     union {
@@ -67,6 +74,7 @@ struct Expr {
         AssignExpr assign;
         GetExpr get;
         SetExpr set;
+        CallExpr call;
     } as;
 };
 
@@ -78,7 +86,7 @@ Expr* expr_variable(Token name);
 Expr* expr_assign(Token name, Expr* value);
 Expr* expr_get(Expr* object, Token name);
 Expr* expr_set(Expr* object, Token name, Expr* value);
-
+Expr* expr_call(Expr* callee, int argc, Expr** argv);
 void expr_free(Expr* expr);
 
 #endif
