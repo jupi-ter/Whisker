@@ -162,6 +162,8 @@ static void generate_game_state_h(CodeGen* gen, Program* program) {
     append_h(gen, "RectangleArray rectangles;\n");
     append_indent(gen);
     append_h(gen, "TimerArray timers;\n");
+    append_indent(gen);
+    append_h(gen, "EntityType* entity_types;\n");
     append_h(gen, "\n");
 
     // Entity arrays
@@ -360,6 +362,15 @@ static void generate_entity_create(CodeGen* gen, EntityDecl* entity) {
     // Set default collision (we'll make this configurable later)
     append_indent(gen);
     append(gen, "entity_set_collision(&game->registry, entity_id, COLLISION_NONE);\n");
+    append(gen, "\n");
+
+    append_indent(gen);
+    char upper_name[256];
+    snprintf(upper_name, sizeof(upper_name), "%s", entity->name.lexeme);
+    for (int i = 0; upper_name[i]; i++) {
+        if (upper_name[i] >= 'a' && upper_name[i] <= 'z') upper_name[i] -= 32;
+    }
+    appendf(gen, "game->entity_types[entity_id] = ENTITY_TYPE_%s;\n", upper_name);
     append(gen, "\n");
 
     // Initialize engine components with defaults
@@ -662,6 +673,10 @@ static void generate_game_init(CodeGen* gen, Program* program) {
     append(gen, "void game_init(GameState* game) {\n");
     gen->indent_level++;
 
+    append_indent(gen);
+    append(gen, "game->entity_types = malloc(sizeof(EntityType) * 128);\n");
+    append(gen, "\n");
+
     // Initialize all entity arrays
     for (int i = 0; i < program->entity_count; i++) {
         char lower_name[256];
@@ -747,6 +762,43 @@ static void generate_game_cleanup(CodeGen* gen, Program* program) {
     append(gen, "}\n\n");
 }
 
+static void generate_collision_dispatcher(CodeGen* gen, Program* program) {
+    append(gen, "void dispatch_collision(GameState* game, uint32_t id1, uint32_t id2) {\n");
+    gen->indent_level++;
+
+    append_indent(gen);
+    append(gen, "switch (game->entity_types[id1]) {\n");
+
+    for (int i = 0; i < program->entity_count; i++) {
+        char upper_name[256];
+        snprintf(upper_name, sizeof(upper_name), "%s", program->entities[i]->name.lexeme);
+        for (int j = 0; upper_name[j]; j++) {
+            if (upper_name[j] >= 'a' && upper_name[j] <= 'z') upper_name[j] -= 32;
+        }
+
+        char lower_name[256];
+        snprintf(lower_name, sizeof(lower_name), "%s", program->entities[i]->name.lexeme);
+        for (int j = 0; lower_name[j]; j++) {
+            if (lower_name[j] >= 'A' && lower_name[j] <= 'Z') lower_name[j] += 32;
+        }
+
+        append_indent(gen);
+        appendf(gen, "case ENTITY_TYPE_%s:\n", upper_name);
+        gen->indent_level++;
+        append_indent(gen);
+        appendf(gen, "%s_on_collision(game, id1, id2);\n", lower_name);
+        append_indent(gen);
+        append(gen, "break;\n");
+        gen->indent_level--;
+    }
+
+    append_indent(gen);
+    append(gen, "}\n");
+
+    gen->indent_level--;
+    append(gen, "}\n\n");
+}
+
 void codegen_generate_program(CodeGen* gen, Program* program) {
     // ===== HEADER =====
     append_h(gen, "#ifndef GAME_GENERATED_H\n");
@@ -762,6 +814,18 @@ void codegen_generate_program(CodeGen* gen, Program* program) {
     append_h(gen, "#include \"collision.h\"\n");
     append_h(gen, "#include \"timer.h\"\n\n");
     append_h(gen, "#include \"sprite.h\"\n\n");
+
+    append_h(gen, "typedef enum {\n");
+    for (int i = 0; i < program->entity_count; i++) {
+        char upper_name[256];
+        snprintf(upper_name, sizeof(upper_name), "%s", program->entities[i]->name.lexeme);
+        for (int j = 0; upper_name[j]; j++) {
+            if (upper_name[j] >= 'a' && upper_name[j] <= 'z') upper_name[j] -= 32;
+        }
+        appendf_h(gen, "    ENTITY_TYPE_%s,\n", upper_name);
+    }
+    append_h(gen, "    ENTITY_TYPE_COUNT\n");
+    append_h(gen, "} EntityType;\n\n");
 
     // Entity structs and arrays go in header
     for (int i = 0; i < program->entity_count; i++) {
@@ -787,6 +851,7 @@ void codegen_generate_program(CodeGen* gen, Program* program) {
     append_h(gen,"void game_init(GameState* game);");
     append_h(gen,"void game_update(GameState* game);");
     append_h(gen,"void game_cleanup(GameState* game);");
+    append_h(gen,"void dispatch_collision(GameState* game, uint32_t id1, uint32_t id2);");
 
     append_h(gen, "\n#endif // GAME_GENERATED_H\n");
 
@@ -805,6 +870,7 @@ void codegen_generate_program(CodeGen* gen, Program* program) {
     generate_game_init(gen, program);
     generate_game_update(gen, program);
     generate_game_cleanup(gen, program);
+    generate_collision_dispatcher(gen, program);
 }
 
 void codegen_write_files(CodeGen* gen, const char* header_path, const char* source_path) {

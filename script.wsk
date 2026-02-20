@@ -7,10 +7,14 @@ entity Player {
         self.vsp = 0;
         renderable.current_sprite_id = 2;
         renderable.image_speed = 0.1;
+        collision.type = COLLISION_RECT;
+        collision.width = 8;
+        collision.height = 8;
     }
 
     on_update {
         self.hsp = 0;
+        self.vsp = 0;
 
         if (keyboard_check(KEY_RIGHT)) {
             self.hsp = 2;
@@ -18,8 +22,15 @@ entity Player {
         if (keyboard_check(KEY_LEFT)) {
             self.hsp = -2;
         }
+        if (keyboard_check(KEY_DOWN)) {
+            self.vsp = 2;
+        }
+        if (keyboard_check(KEY_UP)) {
+            self.vsp = -2;
+        }
 
         transform.x = transform.x + self.hsp;
+        transform.y = transform.y + self.vsp;
     }
 
     on_collision(other) {
@@ -40,6 +51,9 @@ entity Enemy {
         self.direction = 1;
         renderable.current_sprite_id = 1;
         renderable.image_speed = 0.1;
+        collision.type = COLLISION_RECT;
+        collision.width = 8;
+        collision.height = 8;
     }
 
     on_update {
