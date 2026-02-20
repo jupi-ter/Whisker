@@ -22,14 +22,18 @@ EntityDecl* entity_decl_create(Token name, EntityField* fields, int field_count,
 
 void entity_decl_free(EntityDecl* entity) {
     if (!entity) return;
-    free(entity->name.lexeme);  // <-- add this
+    free(entity->name.lexeme);
     for (int i = 0; i < entity->field_count; i++) {
-        free(entity->fields[i].name.lexeme);  // <-- and these
+        free(entity->fields[i].name.lexeme);
     }
     free(entity->fields);
     stmt_free(entity->init);
     stmt_free(entity->on_create);
     stmt_free(entity->on_update);
     stmt_free(entity->on_destroy);
+    stmt_free(entity->on_collision);
+    if (entity->collision_param.lexeme) {
+        free(entity->collision_param.lexeme);
+    }
     free(entity);
 }

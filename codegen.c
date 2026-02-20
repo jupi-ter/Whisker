@@ -394,6 +394,8 @@ static void generate_collision_from_init(CodeGen* gen, EntityDecl* entity) {
         gen->indent_level--;
         append_indent(gen);
         append(gen, "};\n");
+        append_indent(gen);
+        append(gen, "game->rectangles.count++;\n");
     } else if (collision_type == 2) {  // COLLISION_CIRC
         append_indent(gen);
         append(gen, "entity_set_collision(&game->registry, entity_id, COLLISION_CIRC);\n");
@@ -409,6 +411,8 @@ static void generate_collision_from_init(CodeGen* gen, EntityDecl* entity) {
         gen->indent_level--;
         append_indent(gen);
         append(gen, "};\n");
+        append_indent(gen);
+        append(gen, "game->circles.count++;\n");
     }
 }
 
@@ -793,6 +797,8 @@ static void generate_game_update(CodeGen* gen, Program* program) {
 
     // Update all entity types
     for (int i = 0; i < program->entity_count; i++) {
+        if (!program->entities[i]->on_update) continue;
+
         char lower_name[256];
         snprintf(lower_name, sizeof(lower_name), "%s", program->entities[i]->name.lexeme);
         for (int j = 0; lower_name[j]; j++) {
@@ -842,6 +848,8 @@ static void generate_collision_dispatcher(CodeGen* gen, Program* program) {
     append(gen, "switch (game->entity_types[id1]) {\n");
 
     for (int i = 0; i < program->entity_count; i++) {
+        if (!program->entities[i]->on_collision) continue;
+
         char upper_name[256];
         snprintf(upper_name, sizeof(upper_name), "%s", program->entities[i]->name.lexeme);
         for (int j = 0; upper_name[j]; j++) {
@@ -863,6 +871,13 @@ static void generate_collision_dispatcher(CodeGen* gen, Program* program) {
         append(gen, "break;\n");
         gen->indent_level--;
     }
+
+    append_indent(gen);
+    append(gen, "default:\n");
+    gen->indent_level++;
+    append_indent(gen);
+    append(gen, "break;\n");
+    gen->indent_level--;
 
     append_indent(gen);
     append(gen, "}\n");

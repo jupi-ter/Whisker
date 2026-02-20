@@ -465,6 +465,7 @@ static EntityDecl* entity_declaration(Parser* parser) {
     if (!fields) error(error_messages[ERROR_MALLOCFAIL].message);
 
     while (!check(parser, TOKEN_RIGHT_BRACE) &&
+            !check(parser, TOKEN_INIT) &&
             !check(parser, TOKEN_ON_CREATE) &&
             !check(parser, TOKEN_ON_UPDATE) &&
             !check(parser, TOKEN_ON_DESTROY) &&

@@ -49,7 +49,7 @@ typedef struct {
     TokenType type;
 } KeywordMap;
 
-#define KEYWORD_COUNT 33
+#define KEYWORD_COUNT 32
 
 static const KeywordMap keywords[] = {
     {"and" , TOKEN_AND},

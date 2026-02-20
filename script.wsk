@@ -13,45 +13,28 @@ entity Player {
         self.vsp = 0;
         renderable.current_sprite_id = 2;
         renderable.image_speed = 0.1;
-        collision.type = COLLISION_RECT;
-        collision.width = 8;
-        collision.height = 8;
     }
 
     on_update {
         self.hsp = 0;
         self.vsp = 0;
 
-        if (keyboard_check(KEY_RIGHT)) {
-            self.hsp = 2;
-        }
-        if (keyboard_check(KEY_LEFT)) {
-            self.hsp = -2;
-        }
-        if (keyboard_check(KEY_DOWN)) {
-            self.vsp = 2;
-        }
-        if (keyboard_check(KEY_UP)) {
-            self.vsp = -2;
-        }
+        if (keyboard_check(KEY_RIGHT)) self.hsp = 2;
+        if (keyboard_check(KEY_LEFT)) self.hsp = -2;
+        if (keyboard_check(KEY_DOWN)) self.vsp = 2;
+        if (keyboard_check(KEY_UP)) self.vsp = -2;
 
         transform.x = transform.x + self.hsp;
         transform.y = transform.y + self.vsp;
     }
 
     on_collision(other) {
-        self.hsp = 0;
-    }
-
-    on_destroy {
-        self.hsp = 0;
+        transform.x = transform.x - self.hsp;
+        transform.y = transform.y - self.vsp;
     }
 }
 
-entity Enemy {
-    float hsp;
-    int direction;
-
+entity Wall {
     init {
         collision.type = COLLISION_RECT;
         collision.width = 8;
@@ -59,38 +42,15 @@ entity Enemy {
     }
 
     on_create {
-        self.hsp = 1;
-        self.direction = 1;
         renderable.current_sprite_id = 1;
-        renderable.image_speed = 0.1;
-        collision.type = COLLISION_RECT;
-        collision.width = 8;
-        collision.height = 8;
-    }
-
-    on_update {
-        transform.x = transform.x + (self.hsp * self.direction);
-
-        if (transform.x > 120) {
-            self.direction = -1;
-        }
-        if (transform.x < 8) {
-            self.direction = 1;
-        }
-    }
-
-    on_collision(other) {
-        self.direction = self.direction * -1;
-    }
-
-    on_destroy {
-        self.hsp = 0;
     }
 }
 
 game {
     spawn Player(64, 64);
-    spawn Enemy(100, 50);
-    spawn Enemy(80, 80);
-    spawn Enemy(40, 100);
+
+    spawn Wall(32, 32);
+    spawn Wall(96, 32);
+    spawn Wall(32, 96);
+    spawn Wall(96, 96);
 }
