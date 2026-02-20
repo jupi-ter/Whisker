@@ -487,6 +487,7 @@ static EntityDecl* entity_declaration(Parser* parser) {
     }
 
     // parse lifecycle blocks
+    Stmt* init = NULL;
     Stmt* on_create = NULL;
     Stmt* on_update = NULL;
     Stmt* on_collision = NULL;
@@ -495,7 +496,10 @@ static EntityDecl* entity_declaration(Parser* parser) {
 
     // in any order
     while (!check(parser, TOKEN_RIGHT_BRACE)) {
-        if (match(parser, TOKEN_ON_CREATE)) {
+        if (match(parser, TOKEN_INIT)) {                                    // ADD THIS BLOCK
+            consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after init.");
+            init = block_statement(parser);
+        } else if (match(parser, TOKEN_ON_CREATE)) {
             consume(parser, TOKEN_LEFT_BRACE, "Expect '{' after on_create.");
             on_create = block_statement(parser);
         } else if (match(parser, TOKEN_ON_UPDATE)) {
@@ -517,7 +521,7 @@ static EntityDecl* entity_declaration(Parser* parser) {
 
     consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after entity body.");
 
-    return entity_decl_create(token_copy(name), fields, field_count, on_create, on_update, on_destroy, on_collision, collision_param);
+    return entity_decl_create(token_copy(name), fields, field_count, init, on_create, on_update, on_destroy, on_collision, collision_param);
 }
 
 static GameDecl* game_declaration(Parser* parser) {

@@ -20,6 +20,7 @@ typedef struct {
     Token name;              // entity name
     EntityField* fields;     // array of fields
     int field_count;
+    Stmt* init; //this is where static metadata is defined, like collisions. hacky, i know.
     Stmt* on_create;         // on_create block - nullable.
     Stmt* on_update;
     Stmt* on_destroy;
@@ -32,7 +33,7 @@ typedef struct {
     int count;
 } EntityList;
 
-EntityDecl* entity_decl_create(Token name, EntityField* fields, int field_count, Stmt* on_create, Stmt* on_update, Stmt* on_destroy, Stmt* on_collision, Token collision_param);
+EntityDecl* entity_decl_create(Token name, EntityField* fields, int field_count, Stmt* init, Stmt* on_create, Stmt* on_update, Stmt* on_destroy, Stmt* on_collision, Token collision_param);
 void entity_decl_free(EntityDecl* entity);
 
 #endif

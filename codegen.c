@@ -338,7 +338,80 @@ static void generate_stmt(CodeGen* gen, Stmt* stmt, const char* entity_name) {
     }
 }
 
-// Generate entity create function
+static void generate_collision_from_init(CodeGen* gen, EntityDecl* entity) {
+    if (!entity->init) return;
+
+    // Extract collision configuration from init block
+    int collision_type = 0;  // 0=none, 1=rect, 2=circ
+    float width = 0, height = 0;
+
+    Stmt* block = entity->init;
+    if (block->type != STMT_BLOCK) return;
+
+    // Walk through init statements looking for collision.* assignments
+    for (int i = 0; i < block->as.block.count; i++) {
+        Stmt* stmt = block->as.block.statements[i];
+
+        if (stmt->type == STMT_EXPRESSION &&
+            stmt->as.expr.expr->type == EXPR_SET) {
+
+            Expr* set = stmt->as.expr.expr;
+
+            // Check if it's collision.something
+            if (set->as.set.object->type == EXPR_VARIABLE &&
+                strcmp(set->as.set.object->as.variable.name.lexeme, "collision") == 0) {
+
+                const char* field = set->as.set.name.lexeme;
+                Expr* value = set->as.set.value;
+
+                if (strcmp(field, "type") == 0 && value->type == EXPR_VARIABLE) {
+                    const char* type_name = value->as.variable.name.lexeme;
+                    if (strcmp(type_name, "COLLISION_RECT") == 0) {
+                        collision_type = 1;
+                    } else if (strcmp(type_name, "COLLISION_CIRC") == 0) {
+                        collision_type = 2;
+                    }
+                } else if (strcmp(field, "width") == 0 && value->type == EXPR_LITERAL) {
+                    width = (float)value->as.literal.value.as.number;
+                } else if (strcmp(field, "height") == 0 && value->type == EXPR_LITERAL) {
+                    height = (float)value->as.literal.value.as.number;
+                }
+            }
+        }
+    }
+
+    // Generate the actual collision setup code
+    if (collision_type == 1) {  // COLLISION_RECT
+        append_indent(gen);
+        append(gen, "entity_set_collision(&game->registry, entity_id, COLLISION_RECT);\n");
+        append_indent(gen);
+        append(gen, "game->rectangles.data[entity_id] = (RectWrapper){\n");
+        gen->indent_level++;
+        append_indent(gen);
+        append(gen, ".owner_id = entity_id,\n");
+        append_indent(gen);
+        appendf(gen, ".rect = {x, y, %g, %g}\n", width, height);
+        gen->indent_level--;
+        append_indent(gen);
+        append(gen, "};\n");
+    } else if (collision_type == 2) {  // COLLISION_CIRC
+        append_indent(gen);
+        append(gen, "entity_set_collision(&game->registry, entity_id, COLLISION_CIRC);\n");
+        append_indent(gen);
+        append(gen, "game->circles.data[entity_id] = (Circle){\n");
+        gen->indent_level++;
+        append_indent(gen);
+        append(gen, ".owner_id = entity_id,\n");
+        append_indent(gen);
+        appendf(gen, ".position = {x, y},\n");
+        append_indent(gen);
+        appendf(gen, ".radius = %g\n", width);  // Use width as radius
+        gen->indent_level--;
+        append_indent(gen);
+        append(gen, "};\n");
+    }
+}
+
 static void generate_entity_create(CodeGen* gen, EntityDecl* entity) {
     // Lowercase the entity name for the function
     char lower_name[256];
@@ -356,12 +429,11 @@ static void generate_entity_create(CodeGen* gen, EntityDecl* entity) {
     append_indent(gen);
     append(gen, "uint32_t entity_id = entity_create(&game->registry, &game->transforms,\n");
     append_indent(gen);
-    append(gen, "                                   &game->renderables, &game->circles, &game->rectangles);\n");
+    append(gen, "&game->renderables, &game->circles, &game->rectangles);\n");
     append(gen, "\n");
 
-    // Set default collision (we'll make this configurable later)
-    append_indent(gen);
-    append(gen, "entity_set_collision(&game->registry, entity_id, COLLISION_NONE);\n");
+    // Generate collision setup from init block
+    generate_collision_from_init(gen, entity);
     append(gen, "\n");
 
     append_indent(gen);

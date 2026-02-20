@@ -116,6 +116,8 @@ char* token_type_to_string(TokenType type) {
             return "game";
         case TOKEN_SPAWN:
             return "spawn";
+        case TOKEN_INIT:
+            return "init";
     }
     return "";
 }

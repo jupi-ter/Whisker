@@ -2,6 +2,12 @@ entity Player {
     float hsp;
     float vsp;
 
+    init {
+        collision.type = COLLISION_RECT;
+        collision.width = 8;
+        collision.height = 8;
+    }
+
     on_create {
         self.hsp = 0;
         self.vsp = 0;
@@ -45,6 +51,12 @@ entity Player {
 entity Enemy {
     float hsp;
     int direction;
+
+    init {
+        collision.type = COLLISION_RECT;
+        collision.width = 8;
+        collision.height = 8;
+    }
 
     on_create {
         self.hsp = 1;
