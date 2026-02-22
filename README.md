@@ -173,7 +173,7 @@ while (condition) {
 }
 
 // For loops
-for (var i = 0; i < 10; i = i + 1) {
+for (i = 0; i < 10; i = i + 1) {
     // code
 }
 ```
@@ -183,17 +183,6 @@ for (var i = 0; i < 10; i = i + 1) {
 - Arithmetic: `+`, `-`, `*`, `/`
 - Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`
 - Logical: `and`, `or`, `!`
-
-### Variable Scope
-
-Variables declared with `var` are local to their block:
-
-```whisker
-on_update {
-    var speed = 5;
-    transform.x = transform.x + speed;
-}
-```
 
 ## Example: Simple Game
 
