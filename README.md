@@ -303,7 +303,7 @@ These files are automatically placed in `../RatGameC/src/` relative to the trans
 
 ## License
 
-MIT License - see LICENSE file for details
+See LICENSE file for details
 
 ## Contributing
 
