@@ -18,8 +18,8 @@ typedef enum {
     TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_NUMBER,
 
     // Keywords.
-    TOKEN_AND, TOKEN_CLASS, TOKEN_ELSE, TOKEN_FALSE, TOKEN_FUN, TOKEN_FOR, TOKEN_IF, TOKEN_NIL, TOKEN_OR,
-    TOKEN_PRINT, TOKEN_RETURN, TOKEN_SUPER, TOKEN_THIS, TOKEN_TRUE, TOKEN_VAR, TOKEN_WHILE, TOKEN_GAME, TOKEN_SPAWN,
+    TOKEN_AND, TOKEN_ELSE, TOKEN_FALSE, TOKEN_FOR, TOKEN_IF, TOKEN_OR,
+    TOKEN_TRUE, TOKEN_VAR, TOKEN_WHILE, TOKEN_GAME, TOKEN_SPAWN,
 
     // Entity keywords.
     TOKEN_ENTITY, TOKEN_INIT, TOKEN_ON_CREATE, TOKEN_ON_UPDATE, TOKEN_ON_DESTROY, TOKEN_ON_COLLISION, TOKEN_SELF, TOKEN_FLOAT, TOKEN_INT,
@@ -49,22 +49,15 @@ typedef struct {
     TokenType type;
 } KeywordMap;
 
-#define KEYWORD_COUNT 32
+#define KEYWORD_COUNT 25
 
 static const KeywordMap keywords[] = {
     {"and" , TOKEN_AND},
-    {"class" , TOKEN_CLASS},
     {"else" , TOKEN_ELSE},
     {"false" , TOKEN_FALSE},
-    {"fun" , TOKEN_FUN},
     {"for" , TOKEN_FOR},
     {"if" , TOKEN_IF},
-    {"nil" , TOKEN_NIL},
     {"or" , TOKEN_OR},
-    {"print" , TOKEN_PRINT},
-    {"return" , TOKEN_RETURN},
-    {"super" , TOKEN_SUPER},
-    {"this" , TOKEN_THIS},
     {"true" , TOKEN_TRUE},
     {"var" , TOKEN_VAR},
     {"while" , TOKEN_WHILE},

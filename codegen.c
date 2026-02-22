@@ -730,8 +730,8 @@ static void generate_instance_destroy(CodeGen* gen, Program* program) {
     append(gen, "void instance_destroy(GameState* game, uint32_t entity_id) {\n");
     gen->indent_level++;
 
-    append_indent(gen);
-    append(gen, "printf(\"instance_destroy called on entity %d\\n\", entity_id);\n");
+    //append_indent(gen);
+    //append(gen, "printf(\"instance_destroy called on entity %d\\n\", entity_id);\n");
 
     append_indent(gen);
     append(gen, "switch (game->entity_types[entity_id]) {\n");

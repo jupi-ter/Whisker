@@ -98,10 +98,6 @@ static Expr* primary(Parser* parser) {
         Literal lit = { .type = LITERAL_BOOLEAN, .as.boolean = true };
         return expr_literal(lit);
     }
-    if (match(parser, TOKEN_NIL)) {
-        Literal lit = { .type = LITERAL_NONE };
-        return expr_literal(lit);
-    }
 
     if (match(parser, TOKEN_NUMBER)) {
         return expr_literal(previous(parser).literal);
@@ -430,7 +426,6 @@ static Stmt* expression_statement(Parser* parser) {
 }
 
 static Stmt* statement(Parser* parser) {
-    if (match(parser, TOKEN_PRINT)) return print_statement(parser);
     if (match(parser, TOKEN_IF)) return if_statement(parser);
     if (match(parser, TOKEN_WHILE)) return while_statement(parser);
     if (match(parser, TOKEN_FOR)) return for_statement(parser);

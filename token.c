@@ -13,9 +13,9 @@ char* token_type_to_string(TokenType type) {
         case TOKEN_RIGHT_PAREN:
             return ")";
         case TOKEN_LEFT_BRACE:
-            return "[";
+            return "{";
         case TOKEN_RIGHT_BRACE:
-            return "]";
+            return "}";
         case TOKEN_COMMA:
             return ",";
         case TOKEN_DOT:
@@ -54,30 +54,16 @@ char* token_type_to_string(TokenType type) {
             return "number";
         case TOKEN_AND:
             return "and";
-        case TOKEN_CLASS:
-            return "class";
         case TOKEN_ELSE:
             return "else";
         case TOKEN_FALSE:
             return "false";
-        case TOKEN_FUN:
-            return "fun";
         case TOKEN_FOR:
             return "for";
         case TOKEN_IF:
             return "if";
-        case TOKEN_NIL:
-            return "nil";
         case TOKEN_OR:
             return "or";
-        case TOKEN_PRINT:
-            return "print";
-        case TOKEN_RETURN:
-            return "return";
-        case TOKEN_SUPER:
-            return "super";
-        case TOKEN_THIS:
-            return "this";
         case TOKEN_TRUE:
             return "true";
         case TOKEN_VAR:
