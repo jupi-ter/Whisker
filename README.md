@@ -301,10 +301,6 @@ These files are automatically placed in `../RatGameC/src/` relative to the trans
 - Sound management
 - Steamworks SDK integration
 
-## License
-
-See LICENSE file for details
-
 ## Contributing
 
 This is a personal learning project following the "Crafting Interpreters" approach. Issues and pull requests welcome.
