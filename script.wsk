@@ -10,7 +10,7 @@ entity Player {
     on_create {
         self.hsp = 0;
         self.vsp = 0;
-        renderable.current_sprite_id = SPRITE_RED;
+        renderable.current_sprite_id = SPRITE_YELLOW;
         renderable.image_speed = 0.1;
     }
 
